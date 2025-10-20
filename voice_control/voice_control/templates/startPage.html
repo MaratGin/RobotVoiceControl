@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🎤 Web Voice Recorder + WAV + Transcription</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial; text-align: center; padding: 30px; background: #f9f9f9; max-width: 800px; margin: 0 auto; }
+        button { font-size: 18px; padding: 10px 20px; margin: 10px; border: none; border-radius: 6px; cursor: pointer; }
+        #startBtn { background: #4CAF50; color: white; }
+        #stopBtn { background: #f44336; color: white; }
+        #sendBtn { background: #2767aa; color: white; }
+        #status { margin-top: 20px; font-weight: bold; color: #333; min-height: 2em; }
+        #llmResponse { border-color: #1976D2; }
+        a { color: #1976D2; text-decoration: none; margin: 0 8px; }
+        .links { margin-top: 10px; margin-bottom: 20px; }
+        #transcription { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 8px; 
+            border: 1px solid #ddd;
+            margin-top: 20px;
+            text-align: left;
+            min-height: 100px;
+            white-space: pre-wrap;
+        }
+        .section { margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h2>🎤 Запись голоса → WAV + Текст</h2>
+    
+    <button id="startBtn">⏺ Начать запись</button>
+    <button id="stopBtn" disabled>⏹ Остановить</button>
+    
+    <div id="status">Готов к записи</div>
+    
+    <div id="links" class="links"></div>
+
+    <div class="section">
+        <h3>📝 Транскрипция:</h3>
+        <div id="transcription">Здесь появится распознанный текст...</div>
+    </div>
+    <button id="sendBtn" disabled>Отправить команду</button>
+    <div id="llmResponse"></div>
+
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        const sendBtn = document.getElementById('sendBtn');
+        const statusDiv = document.getElementById('status');
+        const transcriptionDiv = document.getElementById('transcription');
+        const llmResponseDiv = document.getElementById('llmResponse');
+
+        document.getElementById('startBtn').onclick = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const mimeType = MediaRecorder.isTypeSupported('audio/webm') 
+                    ? 'audio/webm' 
+                    : 'audio/ogg';
+                mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+                audioChunks = [];
+                mediaRecorder.ondataavailable = event => {
+                    if (event.data.size > 0) audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: mimeType });
+                    const formData = new FormData();
+                    const ext = mimeType.includes('webm') ? 'webm' : 'ogg';
+                    formData.append('audio', audioBlob, `recording.${ext}`);
+
+                    document.getElementById('status').innerText = '🔄 Обработка и транскрипция...';
+                    document.getElementById('transcription').innerText = 'Идет распознавание текста...';
+
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    const statusDiv = document.getElementById('status');
+                    const linksDiv = document.getElementById('links');
+                    const transcriptionDiv = document.getElementById('transcription');
+
+                    if (response.ok) {
+                        statusDiv.innerText = '✅ Готово!';
+                        linksDiv.innerHTML = `
+                            <a href="${result.original_url}" download>Скачать исходник (.${ext})</a> |
+                            <a href="${result.wav_url}" download>Скачать WAV</a>
+                        `;
+                        transcriptionDiv.innerHTML = `<strong>Распознанный текст:</strong><br>${result.transcription}`;
+                        sendBtn.style.display = 'inline-block';
+                    } else {
+                        statusDiv.innerText = '❌ Ошибка: ' + (result.error || 'неизвестно');
+                        linksDiv.innerHTML = '';
+                        transcriptionDiv.innerText = 'Ошибка при распознавании текста';
+                    }
+                };
+
+                mediaRecorder.start();
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('status').innerText = '🎙️ Запись...';
+                document.getElementById('transcription').innerText = 'Идет запись...';
+            } catch (err) {
+                console.error(err);
+                document.getElementById('status').innerText = '🚫 Нет доступа к микрофону';
+            }
+        };
+
+        document.getElementById('stopBtn').onclick = () => {
+            mediaRecorder.stop();
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        };
+
+    sendBtn.onclick = async () => {
+      const text = transcriptionDiv.innerText.trim();
+      if (!text) return;
+
+      sendBtn.disabled = true;
+      statusDiv.innerText = '🤖 Отправка запроса в LLM...';
+      llmResponseDiv.innerText = '';
+
+      try {
+        const response = await fetch('/llm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          llmResponseDiv.innerText = 'Ответ LLM:\n\n' + (result.response || result.raw?.response || 'Пустой ответ');
+          statusDiv.innerText = 'Ответ получен';
+        } else {
+          llmResponseDiv.innerText = 'Ошибка: ' + (result.error || 'Неизвестно');
+        }
+      } catch (err) {
+        llmResponseDiv.innerText = 'Ошибка запроса: ' + err.message;
+      } finally {
+        sendBtn.disabled = false;
+      }
+    };
+    </script>
+</body>
+</html>
