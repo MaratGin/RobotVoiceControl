@@ -5,6 +5,7 @@ llm_bp = Blueprint('llm', __name__)
 
 @llm_bp.route('/llm', methods=['POST'])
 def llm():
+    print("LLm")
     # Обработка POST запроса для передачи промпта в LLM
     data = request.get_json()
     text = data.get('text', '').strip()
@@ -15,4 +16,4 @@ def llm():
         response = send_to_llm(text)
         return jsonify(response)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"errorik": str(e)}), 500

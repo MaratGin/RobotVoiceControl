@@ -38,9 +38,11 @@
 
     <div class="section">
         <h3>📝 Транскрипция:</h3>
-        <div id="transcription">Здесь появится распознанный текст...</div>
+        <div id="temporary">Здесь появится распознанный текст...</div>
+        <div id="transcription"></div>
+
     </div>
-    <button id="sendBtn" disabled>Отправить команду</button>
+    <button id="sendBtn">Отправить команду</button>
     <div id="llmResponse"></div>
 
 
@@ -49,7 +51,8 @@
         let audioChunks = [];
         const sendBtn = document.getElementById('sendBtn');
         const statusDiv = document.getElementById('status');
-        const transcriptionDiv = document.getElementById('transcription');
+        const transcriptionDiv = document.getElementById('temporary');
+        const toSendDiv = document.getElementById('transcription');
         const llmResponseDiv = document.getElementById('llmResponse');
 
         document.getElementById('startBtn').onclick = async () => {
@@ -72,7 +75,7 @@
                     formData.append('audio', audioBlob, `recording.${ext}`);
 
                     document.getElementById('status').innerText = '🔄 Обработка и транскрипция...';
-                    document.getElementById('transcription').innerText = 'Идет распознавание текста...';
+                    document.getElementById('temporary').innerText = 'Идет распознавание текста...';
 
                     const response = await fetch('/upload', {
                         method: 'POST',
@@ -82,7 +85,8 @@
                     const result = await response.json();
                     const statusDiv = document.getElementById('status');
                     const linksDiv = document.getElementById('links');
-                    const transcriptionDiv = document.getElementById('transcription');
+                    const transcriptionDiv = document.getElementById('temporary');
+                    const toSendDiv = document.getElementById('transcription');
 
                     if (response.ok) {
                         statusDiv.innerText = '✅ Готово!';
@@ -90,7 +94,8 @@
                             <a href="${result.original_url}" download>Скачать исходник (.${ext})</a> |
                             <a href="${result.wav_url}" download>Скачать WAV</a>
                         `;
-                        transcriptionDiv.innerHTML = `<strong>Распознанный текст:</strong><br>${result.transcription}`;
+                        transcriptionDiv.innerHTML = '<strong>Распознанный текст:</strong>.';
+                        toSendDiv.innerHTML = `${result.transcription}`;
                         sendBtn.style.display = 'inline-block';
                     } else {
                         statusDiv.innerText = '❌ Ошибка: ' + (result.error || 'неизвестно');
@@ -103,7 +108,7 @@
                 document.getElementById('startBtn').disabled = true;
                 document.getElementById('stopBtn').disabled = false;
                 document.getElementById('status').innerText = '🎙️ Запись...';
-                document.getElementById('transcription').innerText = 'Идет запись...';
+                document.getElementById('temporary').innerText = 'Идет запись...';
             } catch (err) {
                 console.error(err);
                 document.getElementById('status').innerText = '🚫 Нет доступа к микрофону';
@@ -118,7 +123,9 @@
         };
 
     sendBtn.onclick = async () => {
-      const text = transcriptionDiv.innerText.trim();
+        console.log("Send to LLM");
+      const text = toSendDiv.innerText.trim();
+      console.log(text);
       if (!text) return;
 
       sendBtn.disabled = true;

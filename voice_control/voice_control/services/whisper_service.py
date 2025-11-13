@@ -51,7 +51,7 @@ def transcribe_audio(file_path, upload_folder):
     print("Starting transcription")
     # Transcribe
     try:
-        result = model.transcribe(wav_path, language="ru")
+        result = model.transcribe(wav_path, language="ru", fp16=False)
         transcription = result.get("text", "").strip()
         current_app.logger.info("Transcription finished: %s", transcription[:80])
         return transcription, wav_filename
