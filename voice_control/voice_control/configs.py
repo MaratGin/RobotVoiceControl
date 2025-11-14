@@ -2,6 +2,7 @@ class Config:
     UPLOAD_FOLDER = 'recordings'  # куда сохраняются голосовые записи
     OLLAMA_SERVER = 'http://192.168.1.96:11434'  # IP для обращения к ллмке
     WHISPER_MODEL = 'small'  # тип модели виспера
+    ROS_BRIDGE_URL = 'http://127.0.0.1:5001/bridge'  # URL для обращения к ROS мосту
     # Limit uploads to 16 MB by default
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
     # Allowed audio extensions accepted from the browser

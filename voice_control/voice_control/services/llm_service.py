@@ -14,7 +14,7 @@ def send_to_llm(prompt):
     print(3)
     # Отправка ответа на ROS мост (оставлено как было) — не меняем формат отправки
     bridge_response = requests.post(
-        "http://192.168.1.42:5001/bridge",
+        Config.ROS_BRIDGE_URL,
         json=llm_response,
         timeout=10
     )

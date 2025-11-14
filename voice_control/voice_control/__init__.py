@@ -21,9 +21,11 @@ def create_app():
     from routes.main_route import main_bp
     from routes.audio_route import audio_bp
     from routes.llm_route import llm_bp
+    from routes.mock_route import mock_bp
     app.register_blueprint(main_bp)
     app.register_blueprint(audio_bp)
     app.register_blueprint(llm_bp)
+    app.register_blueprint(mock_bp)
     # Defer heavy model loading until first request to speed up startup.
     app.config.setdefault('WHISPER_MODEL_INSTANCE', None)
     app.logger.info("App created, whisper model will be loaded lazily on first request")

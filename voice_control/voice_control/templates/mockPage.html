@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Моковые Запросы</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+    }
+    .box {
+      border: 1px solid #ccc;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+    }
+    button {
+      padding: 10px 20px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    input, select {
+      padding: 8px;
+      width: 200px;
+      margin-right: 10px;
+    }
+    pre {
+      background: #f4f4f4;
+      padding: 15px;
+      border-radius: 6px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>Тестовые запросы</h1>
+  <h3> На этой страница можно отправлять моковые запросы к ROS'у</h3>
+  <h3> Отправляемые json'ы отсюда точно такие же как с ллмки</h3>
+  <h4> Проверьте, совпадает ли адрес отправки в configs.py (ROS_BRIDGE_URL) с адресом на вашем компе</h4>
+
+  <div class="box">
+    <h2>Команда остановки</h2>
+    <button onclick="sendStop()">Отправить команду остановки</button>
+  </div>
+
+  <div class="box">
+    <h2>Команда движения</h2>
+    <label>Направление:</label>
+    <select id="direction">
+      <option value="forward">forward</option>
+      <option value="backward">backward</option>
+    </select>
+
+    <label>Скорость:</label>
+    <input type="number" id="speed" step="0.1" min="0.0" max="2.0" value="0.5" />
+
+    <button onclick="sendMovement()">Отправить команду движения</button>
+  </div>
+
+  <h2>Ответ:</h2>
+  <pre id="responseBox">Пока пусто...</pre>
+
+  <script>
+    function timestamp() {
+      return new Date().toISOString();
+    }
+
+    async function sendStop() {
+      const mockResponse = {
+        model: "llama3.1:8b",
+        created_at: timestamp(),
+        response: "command;stop",
+        done: true,
+        done_reason: "stop",
+        context: [],
+        total_duration: 394187300,
+        load_duration: 113618700,
+        prompt_eval_count: 717,
+        prompt_eval_duration: 205898800,
+        eval_count: 4,
+        eval_duration: 65585100
+      };
+
+      document.getElementById("responseBox").textContent = JSON.stringify(mockResponse, null, 2);
+
+      try {
+        const BRIDGE_URL = "{{ bridge_url }}";
+        await fetch(BRIDGE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(mockResponse)
+        });
+      } catch (err) {
+        console.log("Ошибка отправки:", err);
+      }
+    }
+
+    async function sendMovement() {
+      const direction = document.getElementById("direction").value;
+      const speed = parseFloat(document.getElementById("speed").value);
+
+      const movementString = `movement;${direction};${speed}`;
+
+      const mockResponse = {
+        model: "llama3.1:8b",
+        created_at: timestamp(),
+        response: movementString,
+        done: true,
+        done_reason: "stop",
+        context: [],
+        total_duration: 533966600,
+        load_duration: 110682300,
+        prompt_eval_count: 718,
+        prompt_eval_duration: 236975800,
+        eval_count: 8,
+        eval_duration: 171369800
+      };
+
+      document.getElementById("responseBox").textContent = JSON.stringify(mockResponse, null, 2);
+
+      try {
+        const BRIDGE_URL = "{{ bridge_url }}";
+        await fetch(BRIDGE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(mockResponse)
+        });
+      } catch (err) {
+        console.log("Ошибка отправки:", err);
+      }
+    }
+  </script>
+</body>
+</html>
